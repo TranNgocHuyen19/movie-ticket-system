@@ -73,7 +73,7 @@ public class JwtTokenProvider {
         try {
             byte[] keyBytes = Decoders.BASE64.decode(jwtSecret);
             return Keys.hmacShaKeyFor(keyBytes);
-        } catch (IllegalArgumentException ex) {
+        } catch (Exception ex) {
             return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
         }
     }

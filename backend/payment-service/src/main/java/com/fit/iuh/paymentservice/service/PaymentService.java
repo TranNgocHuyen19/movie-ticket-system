@@ -1,26 +1,37 @@
 package com.fit.iuh.paymentservice.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fit.iuh.paymentservice.config.KafkaConfig;
 import com.fit.iuh.paymentservice.dto.PaymentRequest;
 import com.fit.iuh.paymentservice.dto.PaymentResponse;
+import java.util.Map;
+import java.util.Random;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-
-import java.util.Random;
+import org.springframework.web.client.RestTemplate;
 
 @Service
 public class PaymentService {
 
-    private static final Logger logger = LoggerFactory.getLogger(PaymentService.class);    @Autowired
+    private static final Logger logger = LoggerFactory.getLogger(PaymentService.class);
+
+    @Autowired
     private KafkaTemplate<String, String> kafkaTemplate;
 
     @Autowired
-    private WebClient webClient;
+    private RestTemplate restTemplate;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Value("${order.service.base-url:http://localhost:8081}")
+    private String orderServiceBaseUrl;
 
     @Autowired
     private NotificationService notificationService;
@@ -51,16 +62,20 @@ public class PaymentService {
               // Cập nhật trạng thái order thành PAYMENT_FAILED
             updateOrderStatus(bookingId, "PAYMENT_FAILED");
             
-            // Gửi event đến Kafka
-            kafkaTemplate.send(KafkaConfig.PAYMENT_FAILED_TOPIC, bookingId);
+            // Gửi event BOOKING_FAILED đến Kafka
+            kafkaTemplate.send(KafkaConfig.BOOKING_FAILED_TOPIC, bookingId);
             
             return new PaymentResponse(bookingId, false, "Payment failed");
         }
     }    /**
      * Xử lý thanh toán từ Kafka (sự kiện từ booking-service)
      */
-    @KafkaListener(topics = KafkaConfig.BOOKING_CREATED_TOPIC, groupId = "payment-service-group")
-    public void processPaymentFromEvent(String bookingId) {
+        @KafkaListener(
+            topics = KafkaConfig.BOOKING_CREATED_TOPIC,
+            groupId = "${spring.kafka.consumer.group-id:payment-service-group}"
+        )
+    public void processPaymentFromEvent(String bookingEventPayload) {
+        String bookingId = extractBookingId(bookingEventPayload);
         logger.info("Received booking event from Kafka for payment processing: {}", bookingId);
 
         boolean paymentSuccess = new Random().nextBoolean();
@@ -81,8 +96,8 @@ public class PaymentService {
             // Cập nhật trạng thái order thành PAYMENT_FAILED
             updateOrderStatus(bookingId, "PAYMENT_FAILED");
             
-            // Gửi event đến Kafka
-            kafkaTemplate.send(KafkaConfig.PAYMENT_FAILED_TOPIC, bookingId);
+            // Gửi event BOOKING_FAILED đến Kafka
+            kafkaTemplate.send(KafkaConfig.BOOKING_FAILED_TOPIC, bookingId);
         }
     }
 
@@ -92,13 +107,9 @@ public class PaymentService {
     private void updateOrderStatus(String bookingId, String status) {
         try {
             logger.info("Updating order status for booking {} to {}", bookingId, status);
-            
-            webClient.put()
-                    .uri("/api/v1/orders/{id}/status", bookingId)
-                    .bodyValue(new OrderStatusUpdateRequest(status))
-                    .retrieve()
-                    .bodyToMono(Void.class)
-                    .block();
+
+            String updateStatusUrl = orderServiceBaseUrl + "/api/v1/orders/{id}/status";
+            restTemplate.put(updateStatusUrl, Map.of("status", status), bookingId);
             
             logger.info("Order status updated successfully for booking: {}", bookingId);
         } catch (Exception e) {
@@ -106,22 +117,27 @@ public class PaymentService {
         }
     }
 
-    /**
-     * DTO helper class để gửi request cập nhật trạng thái
-     */
-    private static class OrderStatusUpdateRequest {
-        private String status;
-
-        public OrderStatusUpdateRequest(String status) {
-            this.status = status;
+    private String extractBookingId(String bookingEventPayload) {
+        if (bookingEventPayload == null) {
+            return null;
         }
 
-        public String getStatus() {
-            return status;
+        String trimmedPayload = bookingEventPayload.trim();
+        if (!trimmedPayload.startsWith("{")) {
+            return trimmedPayload;
         }
 
-        public void setStatus(String status) {
-            this.status = status;
+        try {
+            JsonNode root = objectMapper.readTree(trimmedPayload);
+            JsonNode bookingIdNode = root.get("bookingId");
+            if (bookingIdNode != null && !bookingIdNode.isNull()) {
+                return bookingIdNode.asText();
+            }
+        } catch (Exception ex) {
+            logger.warn("Cannot parse BOOKING_CREATED payload as JSON, use raw payload as bookingId: {}", bookingEventPayload);
         }
+
+        return trimmedPayload;
     }
+
 }

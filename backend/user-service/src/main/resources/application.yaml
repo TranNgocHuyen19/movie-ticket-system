@@ -1,11 +1,10 @@
 spring:
   application:
-    name: booking-service
-    port: 8083
+    name: user-service
   datasource:
-    url: jdbc:h2:mem:bookingdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    url: jdbc:h2:mem:userdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     driver-class-name: org.h2.Driver
-    bookingname: sa
+    username: sa
     password:
   jpa:
     hibernate:
@@ -21,15 +20,16 @@ spring:
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:172.16.49.60:9092}
     consumer:
-      group-id: booking-service-group
+      group-id: user-service-group
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-      properties:
-        spring.json.trusted.packages: "*"
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+server:
+  port: 8080
 
 jwt:
   secret: a-very-long-jwt-secret-for-local-dev-change-in-production-123456789

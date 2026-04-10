@@ -10,7 +10,7 @@ public class KafkaConfig {
 
     public static final String BOOKING_CREATED_TOPIC = "booking-created";
     public static final String PAYMENT_COMPLETED_TOPIC = "payment-completed";
-    public static final String PAYMENT_FAILED_TOPIC = "payment-failed";
+    public static final String BOOKING_FAILED_TOPIC = "booking-failed";
 
     @Bean
     public NewTopic bookingCreatedTopic() {
@@ -29,8 +29,8 @@ public class KafkaConfig {
     }
 
     @Bean
-    public NewTopic paymentFailedTopic() {
-        return TopicBuilder.name(PAYMENT_FAILED_TOPIC)
+    public NewTopic bookingFailedTopic() {
+        return TopicBuilder.name(BOOKING_FAILED_TOPIC)
                 .partitions(1)
                 .replicas(1)
                 .build();

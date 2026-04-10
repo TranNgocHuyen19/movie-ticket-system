@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider } from './context/AuthProvider';
+
 import { Layout } from './components/layout/Layout';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { PublicRoute } from './components/layout/PublicRoute';
@@ -7,6 +8,8 @@ import { Login } from './pages/Auth/Login';
 import { Register } from './pages/Auth/Register';
 import { MovieList } from './pages/Movies/MovieList';
 import { Booking } from './pages/Booking/Booking';
+
+import { Profile } from './pages/Auth/Profile';
 
 export function App() {
   return (
@@ -25,7 +28,9 @@ export function App() {
             {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>
               <Route path="/booking/:movieId" element={<Booking />} />
+              <Route path="/profile" element={<Profile />} />
             </Route>
+
             
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />

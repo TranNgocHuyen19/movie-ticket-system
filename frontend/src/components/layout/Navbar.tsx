@@ -17,7 +17,7 @@ export const Navbar = () => {
 
   return (
     <nav className="sticky top-0 z-50 w-full bg-slate-950/80 backdrop-blur-xl border-b border-white/5 py-4">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
         <div className="flex items-center gap-8">
           <Link to="/" className="group flex items-center gap-2">
             <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/30 group-hover:scale-110 transition-transform">
@@ -43,23 +43,24 @@ export const Navbar = () => {
                 <Heart size={20} />
               </Button>
               <div className="h-8 w-[1px] bg-white/10 mx-2" />
-              <div className="flex items-center gap-3">
+              <Link to="/profile" className="flex items-center gap-3 group/user cursor-pointer">
                 <div className="flex flex-col items-end hidden sm:flex">
-                  <span className="text-sm font-bold text-white">{user?.username}</span>
+                  <span className="text-sm font-bold text-white group-hover/user:text-primary transition-colors">{user?.username}</span>
                   <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest leading-none">VIP Member</span>
                 </div>
-                <div className="w-10 h-10 rounded-xl bg-slate-800 border border-white/10 flex items-center justify-center text-slate-300 font-black text-sm">
-                  {user?.username.charAt(0).toUpperCase()}
+                <div className="w-10 h-10 rounded-xl bg-slate-800 border border-white/10 flex items-center justify-center text-slate-300 font-black text-sm group-hover/user:border-primary/50 transition-all shadow-lg group-hover/user:shadow-primary/20">
+                  {user?.username?.charAt(0).toUpperCase() || 'U'}
                 </div>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={handleLogout}
-                  className="rounded-xl text-slate-400 hover:text-primary hover:bg-primary/5"
-                >
-                  <LogOut size={20} />
-                </Button>
-              </div>
+              </Link>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={handleLogout}
+                className="rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-500/5 transition-colors ml-1"
+              >
+                <LogOut size={20} />
+              </Button>
+
             </>
           ) : (
             <div className="flex items-center gap-2">

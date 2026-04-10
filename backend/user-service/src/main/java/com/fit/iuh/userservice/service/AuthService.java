@@ -23,17 +23,20 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthenticationManager authenticationManager;
+    private final UserEventPublisher userEventPublisher;
 
     public AuthService(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
             JwtTokenProvider jwtTokenProvider,
-            AuthenticationManager authenticationManager
+            AuthenticationManager authenticationManager,
+            UserEventPublisher userEventPublisher
     ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenProvider = jwtTokenProvider;
         this.authenticationManager = authenticationManager;
+        this.userEventPublisher = userEventPublisher;
     }
 
     public AuthResponse register(RegisterRequest request) {
@@ -52,6 +55,7 @@ public class AuthService {
                 .build();
 
         User savedUser = userRepository.save(user);
+        userEventPublisher.publishUserRegistered(savedUser);
         String token = jwtTokenProvider.generateToken(savedUser.getUsername());
 
         return new AuthResponse(token, "Bearer", UserResponse.fromEntity(savedUser));
